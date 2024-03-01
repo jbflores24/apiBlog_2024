@@ -27,4 +27,5 @@ Route::apiResource('/user',UserController::class);
 Route::apiResource('/article',ArticleController::class);
 Route::apiResource('/comment', CommentController::class);
 
+Route::post('article/actualizar/{id}',[ArticleController::class,'actualizar']);
 

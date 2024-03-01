@@ -2,7 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Responses\ApiResponse;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreArticleRequest extends FormRequest
 {
@@ -27,5 +31,19 @@ class StoreArticleRequest extends FormRequest
             'password' => 'required|min:4|max:64',
             'rol_id'=>'required'
         ];
+    }
+
+    /*public function messages(){
+        return [
+            'email.min' => 'Entiende que el minimo son 8 caracteres',
+            'email.email' => 'No es un correo electrónico válido'
+        ];
+    }*/
+
+    protected function failedValidation(Validator $validator)
+    {
+        $errors = (new ValidationException($validator))->errors();
+        throw new HttpResponseException(ApiResponse::error('Ocurrieron Errores',404, $errors));
+        parent::failedValidation($validator);
     }
 }

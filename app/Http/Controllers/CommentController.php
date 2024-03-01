@@ -9,6 +9,7 @@ use App\Http\Responses\ApiResponse;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class CommentController extends Controller
 {
@@ -18,7 +19,8 @@ class CommentController extends Controller
     public function index()
     {
         try{
-            $comments = new CommentCollection(Comment::all());
+            //$comments = new CommentCollection(Comment::all());
+            $comments = Comment::with('user', 'article')->get();
             return ApiResponse::success('Listado de comentarios', 200, $comments);
         } catch (Exception $e){
             return ApiResponse::error('No se encontraron comentarios', 404);
@@ -30,7 +32,22 @@ class CommentController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+            $request->validate(
+                [
+                    'comentario' => 'required|min:1|max:255',
+                    'estado' => 'required',
+                    'user_id'=>'required',
+                    'article_id' => 'required'
+                ]
+            );
+            $comment = Comment::create($request->all());
+            return ApiResponse::success("Comentario creado", 200, $comment);
+        } catch (ValidationException $e) {
+            return ApiResponse::error($e->getMessage() ,404);
+        } catch (Exception $e) {
+            return ApiResponse::error($e->getMessage() ,500);
+        }
     }
 
     /**
@@ -50,16 +67,42 @@ class CommentController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Comment $comment)
+    public function update(Request $request, $id)
     {
-        //
+        try {
+            $comment=Comment::findOrFail($id);
+            $request->validate(
+                [
+                    'comentario' => 'required|min:1|max:255',
+                    'estado' => 'required',
+                    'user_id'=>'required',
+                    'article_id' => 'required'
+                ]
+            );
+            $comment->update($request->all());
+            return ApiResponse::success("Comentario actualizado", 200, $comment);
+        } catch (ValidationException $e) {
+            return ApiResponse::error($e->getMessage() ,404);
+        } catch (Exception $e) {
+            return ApiResponse::error($e->getMessage() ,500);
+        } catch (ModelNotFoundException $e){
+            return ApiResponse::error('No se encontró el comentario' ,404);
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Comment $comment)
+    public function destroy($id)
     {
-        //
+        try{
+            $comment =  Comment::findOrFail($id);
+            $comment -> delete();
+            return ApiResponse::success("Se ha eliminado el comentario correctamente.",  200);
+        } catch (ModelNotFoundException $e) {
+            return ApiResponse::error("No se ha encontrado el comentario", 404);
+        } catch (Exception $e) {
+            return ApiResponse::error ($e->getMessage(), 500);
+        }
     }
 }

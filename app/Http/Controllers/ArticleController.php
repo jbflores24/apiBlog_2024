@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ArticleCollection;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
 
 class ArticleController extends Controller
 {
@@ -19,7 +20,7 @@ class ArticleController extends Controller
     {
         try{
             $articles = new ArticleCollection(Article::all());
-            return ApiResponse::success('Listado de usuarios',200,$articles);
+            return ApiResponse::success('Listado de artículos',200,$articles);
         } catch (Exception $e){
             return ApiResponse::error('Error en la consulta', 404);
         }
@@ -30,7 +31,34 @@ class ArticleController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+            $request->validate([
+                'titulo' => 'required|min:3|max:255',
+                'texto' => 'required',
+                'imagen' => ['nullable','image','mimes:jpeg,jpg,gif,svg,bmp','max:10240'],
+                'user_id' => 'required'
+            ]);
+            $article = new Article;
+            $article->titulo = $request->input('titulo');
+            $article->texto = $request->input('texto');
+            $article->user_id = $request->input('user_id');
+            if ($request->hasFile('imagen')){
+                $file = $request->file('imagen');
+                $filename = $file->getClientOriginalName();
+                $filename = pathinfo($filename, PATHINFO_FILENAME);
+                $name_file = str_replace(" ", "_", $filename);
+                $extension = $file->getClientOriginalExtension();
+                $picture = date('His').'-'.$name_file.'.'.$extension; //nuevo nombre del archivo
+                $file->move(public_path('uploads/'),$picture);
+                $article->imagen =  '/uploads/'.$picture;
+            }
+            $article->save();
+            return ApiResponse::success('Artículo agregado', 200, $article);
+        } catch (ValidationException $e){
+            return ApiResponse::error ($e->getMessage(), 404);
+        } catch (Exception $e){
+            return ApiResponse::error ($e->getMessage(), 500);
+        }
     }
 
     /**
@@ -50,16 +78,58 @@ class ArticleController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Article $article)
+    public function update(Request $request, $id)
     {
-        //
+
+    }
+
+    public function actualizar(Request $request, $id){
+        try {
+            $article = Article::findOrFail($id);
+            $request->validate([
+                'titulo' => 'required|min:3|max:255',
+                'texto' => 'required',
+                'imagen' => ['nullable','image','mimes:jpeg,jpg,gif,svg,bmp','max:10240'],
+                'user_id' => 'required'
+            ]);
+            $article = new Article;
+            $article->titulo = $request->input('titulo');
+            $article->texto = $request->input('texto');
+            $article->user_id = $request->input('user_id');
+            if ($request->hasFile('imagen')){
+                $file = $request->file('imagen');
+                $filename = $file->getClientOriginalName();
+                $filename = pathinfo($filename, PATHINFO_FILENAME);
+                $name_file = str_replace(" ", "_", $filename);
+                $extension = $file->getClientOriginalExtension();
+                $picture = date('His').'-'.$name_file.'.'.$extension; //nuevo nombre del archivo
+                $file->move(public_path('uploads/'),$picture);
+                $article->imagen =  '/uploads/'.$picture;
+            }
+            $article->update();
+            return ApiResponse::success('Artículo actualizado', 200, $article);
+        } catch (ValidationException $e){
+            return ApiResponse::error ($e->getMessage(), 404);
+        } catch (Exception $e){
+            return ApiResponse::error ($e->getMessage(), 500);
+        } catch (ModelNotFoundException $e){
+            return ApiResponse::error ($e->getMessage(), 404);
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Article $article)
+    public function destroy($id)
     {
-        //
+        try{
+            $article = Article::findOrFail($id);
+            $article->delete();
+            return ApiResponse::success('Se ha eliminado el artículo', 200);
+        } catch (ModelNotFoundException $e){
+            return ApiResponse::error ('No se encontro el registro', 404);
+        } catch (Exception $e) {
+            return ApiResponse::error ($e->getMessage(),500);
+        }
     }
 }

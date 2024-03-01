@@ -62,16 +62,33 @@ class RolController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Rol $rol)
+    public function update(Request $request, $id)
     {
-        //
+        try {
+            $rol = Rol::findOrFail($id);
+            $request -> validate([
+                'nombre' => 'required|min:3|max:64',
+            ]);
+            $rol->update($request->all());
+            return  ApiResponse::success('Se ha actualizado el rol',200,$rol);
+        } catch (ModelNotFoundException $e){
+            return ApiResponse::error($e->getMessage(),404);
+        } catch (Exception $e){
+            return ApiResponse::error($e->getMessage(),500);
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Rol $rol)
+    public function destroy($id)
     {
-        //
+        try{
+            $rol=Rol::findOrFail($id);
+            $rol->delete();
+            return ApiResponse::success("Se ha eliminado el rol correctamente",200);
+        } catch (ModelNotFoundException $e){
+            return ApiResponse::error("No se ha encontrado el rol a eliminar.",404);
+        }
     }
 }
