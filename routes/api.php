@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\UserController;
@@ -17,15 +18,18 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
-
+/*
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});*/
+
+Route::middleware('auth:sanctum')->group( function(){
+    Route::apiResource('/rol',RolController::class);
+    Route::apiResource('/article',ArticleController::class);
+    Route::apiResource('/comment', CommentController::class);
+    Route::post('article/actualizar/{id}',[ArticleController::class,'actualizar']);
 });
-
-Route::apiResource('/rol',RolController::class);
 Route::apiResource('/user',UserController::class);
-Route::apiResource('/article',ArticleController::class);
-Route::apiResource('/comment', CommentController::class);
 
-Route::post('article/actualizar/{id}',[ArticleController::class,'actualizar']);
+Route::post ('/login',[AuthController::class,'login']);
 
